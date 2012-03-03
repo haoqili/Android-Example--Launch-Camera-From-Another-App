@@ -16,6 +16,8 @@ public class CameraLaunch extends Activity
 {
 	final static private String TAG = "##### Main Activity";
 
+	static final int targetBytes = 65000; // for scaling image
+	
 	private static final int CAMERA_PIC_REQUEST = 1;
 	
 	Button camera_button;
@@ -47,13 +49,37 @@ public class CameraLaunch extends Activity
         if (requestCode == CAMERA_PIC_REQUEST) {
             logm("Camera Handling results!");
             Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
-            logm("image total bytes: " + thumbnail.getRowBytes()*thumbnail.getHeight()); // 76800
-            // concerned about small size? 
-            // see: http://stackoverflow.com/questions/1910608/android-action-image-capture-intent
-            logm("image width: " + thumbnail.getWidth()); //160
-            logm("image height: " + thumbnail.getHeight()); //120
             ImageView image = (ImageView) findViewById(R.id.photoResultView);
             image.setImageBitmap(thumbnail);
+            
+            // To scale image to a target byte size
+            Bitmap resized = scaleToTargetSize(thumbnail);
+            ImageView image2 = (ImageView) findViewById(R.id.photoResized);
+            image2.setImageBitmap(resized);
         }
+    }
+    
+    protected Bitmap scaleToTargetSize(Bitmap thumbnail){
+    	// print debugging information:
+    	logm("orig total bytes: " + thumbnail.getRowBytes()*thumbnail.getHeight()); // 76800 or 38400 it varies
+        // concerned about small size? 
+        // see: http://stackoverflow.com/questions/1910608/android-action-image-capture-intent
+        logm("orig width: " + thumbnail.getWidth()); //160
+        logm("orig height: " + thumbnail.getHeight()); //120 
+        
+        //resizing:
+    	int givenBytes = thumbnail.getRowBytes()*thumbnail.getHeight();
+    	int givenPixels = thumbnail.getHeight()*thumbnail.getWidth();
+    	int bytes_p_pixel = givenBytes/givenPixels;
+    	
+    	int targetPixels = (int) (targetBytes/(1.0*bytes_p_pixel));
+    	double factor = Math.sqrt(targetPixels/(1.0*givenPixels));
+    	
+    	int newWidth = (int)(thumbnail.getWidth()*factor);
+    	int newHeight = (int)(thumbnail.getHeight()*factor);
+    	logm("new width: " + newWidth);
+    	logm("new height: " + newHeight);
+    	logm("new total bytes: " + newWidth*newHeight*bytes_p_pixel);
+    	return Bitmap.createScaledBitmap(thumbnail, newWidth, newHeight, true);
     }
 }
